@@ -8,6 +8,7 @@ import (
 	"github.com/fabric8-services/fabric8-auth/application"
 	"github.com/fabric8-services/fabric8-auth/auth"
 	"github.com/fabric8-services/fabric8-auth/space"
+	"github.com/fabric8-services/fabric8-auth/authorization/resource"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 )
@@ -75,6 +76,14 @@ func (g *GormBase) Users() account.UserRepository {
 // OauthStates returns an oauth state reference repository
 func (g *GormBase) OauthStates() auth.OauthStateReferenceRepository {
 	return auth.NewOauthStateReferenceRepository(g.db)
+}
+
+func (g *GormBase) ResourceRepository() resource.ResourceRepository {
+	return resource.NewResourceRepository(g.db)
+}
+
+func (g *GormBase) ResourceTypeRepository() resource.ResourceTypeRepository {
+	return resource.NewResourceTypeRepository(g.db)
 }
 
 func (g *GormBase) DB() *gorm.DB {
