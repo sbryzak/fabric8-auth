@@ -5,6 +5,7 @@ import (
 	"github.com/fabric8-services/fabric8-auth/application"
 	"github.com/fabric8-services/fabric8-auth/authorization/resource"
 	"github.com/fabric8-services/fabric8-auth/jsonapi"
+	"github.com/fabric8-services/fabric8-auth/log"
 
 	"github.com/goadesign/goa"
 	uuid "github.com/satori/go.uuid"
@@ -51,7 +52,7 @@ func (c *ResourceController) Register(ctx *app.RegisterResourceContext) error {
 	err := application.Transactional(c.db, func(appl application.Application) error {
 
 		// Lookup or create the resource type
-		resourceType, err := appl.ResourceTypeRepository().LookupOrCreate(ctx, ctx.Payload.Name)
+		resourceType, err := appl.ResourceTypeRepository().LookupOrCreate(ctx, ctx.Payload.Type)
 		if (err != nil) {
 			return jsonapi.JSONErrorResponse(ctx, err)
 		}
@@ -62,7 +63,7 @@ func (c *ResourceController) Register(ctx *app.RegisterResourceContext) error {
 			parentResource, err = appl.ResourceRepository().Load(ctx, *ctx.Payload.ParentResourceID)
 
 			if (err != nil) {
-				return jsonapi.JSONErrorResponse(ctx, err)
+				return err
 			}
 		}
 
@@ -72,6 +73,8 @@ func (c *ResourceController) Register(ctx *app.RegisterResourceContext) error {
 		identity, err := appl.Identities().Load(ctx, identityID)
 		if (err != nil) {
 			// TODO raise an error if the identity could not be determined
+
+			return jsonapi.JSONErrorResponse(ctx, err)
 		}
 
 		res = &resource.Resource{
@@ -92,6 +95,14 @@ func (c *ResourceController) Register(ctx *app.RegisterResourceContext) error {
 	if (err != nil) {
 	  return jsonapi.JSONErrorResponse(ctx, err)
 	}
+
+	log.Debug(ctx, map[string]interface{}{
+		"resource_id":        res.ResourceID,
+    "parent_resource_id": res.ParentResource.ResourceID,
+		"owner_id":           res.Owner.ID,
+		"resource_type":      res.ResourceType.Name,
+		"description":        res.Description,
+	}, "resource registered")
 
 	return ctx.Created(&app.RegisterResource{ID: &res.ResourceID})
 }

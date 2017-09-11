@@ -10,6 +10,7 @@ import (
 	"github.com/fabric8-services/fabric8-auth/account"
 	"github.com/fabric8-services/fabric8-auth/application"
 	"github.com/fabric8-services/fabric8-auth/auth"
+	res "github.com/fabric8-services/fabric8-auth/authorization/resource"
 	config "github.com/fabric8-services/fabric8-auth/configuration"
 	"github.com/fabric8-services/fabric8-auth/resource"
 	"github.com/fabric8-services/fabric8-auth/space"
@@ -129,6 +130,14 @@ func (a *app) Users() account.UserRepository {
 }
 
 func (a *app) OauthStates() auth.OauthStateReferenceRepository {
+	return nil
+}
+
+func (a *app) ResourceRepository() res.ResourceRepository {
+	return nil
+}
+
+func (a *app) ResourceTypeRepository() res.ResourceTypeRepository {
 	return nil
 }
 
