@@ -104,4 +104,3 @@ var RegisterResourceMedia = a.MediaType("application/vnd.register_resource+json"
 		a.Attribute("_id")
 	})
 })
-

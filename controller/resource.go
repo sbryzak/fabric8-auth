@@ -14,7 +14,7 @@ import (
 // ResourceController implements the resource resource.
 type ResourceController struct {
 	*goa.Controller
-	db              application.DB
+	db application.DB
 }
 
 // NewResourceController creates a resource controller.
@@ -53,16 +53,16 @@ func (c *ResourceController) Register(ctx *app.RegisterResourceContext) error {
 
 		// Lookup or create the resource type
 		resourceType, err := appl.ResourceTypeRepository().LookupOrCreate(ctx, ctx.Payload.Type)
-		if (err != nil) {
-			return jsonapi.JSONErrorResponse(ctx, err)
+		if err != nil {
+			return err
 		}
 
 		// Lookup the parent resource if one has been specified
 		var parentResource *resource.Resource
-		if (ctx.Payload.ParentResourceID != nil) {
+		if ctx.Payload.ParentResourceID != nil {
 			parentResource, err = appl.ResourceRepository().Load(ctx, *ctx.Payload.ParentResourceID)
 
-			if (err != nil) {
+			if err != nil {
 				return err
 			}
 		}
@@ -71,10 +71,10 @@ func (c *ResourceController) Register(ctx *app.RegisterResourceContext) error {
 		var identityID uuid.UUID
 
 		identity, err := appl.Identities().Load(ctx, identityID)
-		if (err != nil) {
+		if err != nil {
 			// TODO raise an error if the identity could not be determined
 
-			return jsonapi.JSONErrorResponse(ctx, err)
+			return err
 		}
 
 		res = &resource.Resource{
@@ -91,14 +91,13 @@ func (c *ResourceController) Register(ctx *app.RegisterResourceContext) error {
 		return err
 	})
 
-
-	if (err != nil) {
-	  return jsonapi.JSONErrorResponse(ctx, err)
+	if err != nil {
+		return jsonapi.JSONErrorResponse(ctx, err)
 	}
 
 	log.Debug(ctx, map[string]interface{}{
 		"resource_id":        res.ResourceID,
-    "parent_resource_id": res.ParentResource.ResourceID,
+		"parent_resource_id": res.ParentResource.ResourceID,
 		"owner_id":           res.Owner.ID,
 		"resource_type":      res.ResourceType.Name,
 		"description":        res.Description,

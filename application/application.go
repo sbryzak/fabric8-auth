@@ -4,8 +4,8 @@ import (
 	"github.com/fabric8-services/fabric8-auth/account"
 	"github.com/fabric8-services/fabric8-auth/auth"
 
-	"github.com/fabric8-services/fabric8-auth/space"
 	"github.com/fabric8-services/fabric8-auth/authorization/resource"
+	"github.com/fabric8-services/fabric8-auth/space"
 )
 
 //An Application stands for a particular implementation of the business logic of our application
