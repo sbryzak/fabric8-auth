@@ -24,21 +24,15 @@ func NewResourceController(service *goa.Service, db application.DB) *ResourceCon
 
 // Delete runs the delete action.
 func (c *ResourceController) Delete(ctx *app.DeleteResourceContext) error {
-	// ResourceController_Delete: start_implement
+	// TODO validate the PAT here
 
-	// Put your logic here
-
-	// ResourceController_Delete: end_implement
 	return nil
 }
 
 // Read runs the read action.
 func (c *ResourceController) Read(ctx *app.ReadResourceContext) error {
-	// ResourceController_Read: start_implement
+	// TODO validate the PAT here
 
-	// Put your logic here
-
-	// ResourceController_Read: end_implement
 	return nil
 }
 
@@ -63,20 +57,36 @@ func (c *ResourceController) Register(ctx *app.RegisterResourceContext) error {
 			parentResource, err = appl.ResourceRepository().Load(ctx, *ctx.Payload.ParentResourceID)
 
 			if err != nil {
+				log.Error(ctx, map[string]interface{}{
+					"parent_resource_id": ctx.Payload.ParentResourceID,
+				}, "Parent resource could not be found")
+
 				return err
 			}
 		}
 
-		// TODO extract the owner identity from the PAT
-		var identityID uuid.UUID
-
-		identity, err := appl.Identities().Load(ctx, identityID)
+		// Extract the resource owner ID from the request
+		resourceOwnerID, err := uuid.FromString(ctx.Payload.ResourceOwnerID)
 		if err != nil {
-			// TODO raise an error if the identity could not be determined
+			log.Error(ctx, map[string]interface{}{
+				"resource_owner_id": ctx.Payload.ResourceOwnerID,
+			}, "Resource owner ID is not valid")
+
+			return jsonapi.JSONErrorResponse(ctx, goa.ErrUnauthorized("Invalid resource_owner_id"))
+		}
+
+		// Lookup the identity record of the resource owner
+		identity, err := appl.Identities().Load(ctx, resourceOwnerID)
+		if err != nil {
+
+			log.Error(ctx, map[string]interface{}{
+				"resource_owner_id": resourceOwnerID.String(),
+			}, "Resource owner could not be found")
 
 			return err
 		}
 
+		// Create the new resource instance
 		res = &resource.Resource{
 			ResourceID:     uuid.NewV4().String(),
 			ParentResource: parentResource, //ctx.Payload.ParentResourceID,
@@ -85,7 +95,7 @@ func (c *ResourceController) Register(ctx *app.RegisterResourceContext) error {
 			Description:    *ctx.Payload.Description,
 		}
 
-		// Create the resource
+		// Persist the resource
 		appl.ResourceRepository().Create(ctx, res)
 
 		return err
@@ -108,10 +118,7 @@ func (c *ResourceController) Register(ctx *app.RegisterResourceContext) error {
 
 // Update runs the update action.
 func (c *ResourceController) Update(ctx *app.UpdateResourceContext) error {
-	// ResourceController_Update: start_implement
+	// TODO validate the PAT here
 
-	// Put your logic here
-
-	// ResourceController_Update: end_implement
 	return nil
 }
