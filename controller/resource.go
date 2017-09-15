@@ -1,14 +1,17 @@
 package controller
 
 import (
+	"fmt"
+
 	"github.com/fabric8-services/fabric8-auth/app"
 	"github.com/fabric8-services/fabric8-auth/application"
 	"github.com/fabric8-services/fabric8-auth/authorization/resource"
+	"github.com/fabric8-services/fabric8-auth/errors"
 	"github.com/fabric8-services/fabric8-auth/jsonapi"
 	"github.com/fabric8-services/fabric8-auth/log"
 
 	"github.com/goadesign/goa"
-	uuid "github.com/satori/go.uuid"
+	"github.com/satori/go.uuid"
 )
 
 // ResourceController implements the resource resource.
@@ -55,32 +58,32 @@ func (c *ResourceController) Register(ctx *app.RegisterResourceContext) error {
 		var parentResource *resource.Resource
 		if ctx.Payload.ParentResourceID != nil {
 			parentResource, err = appl.ResourceRepository().Load(ctx, *ctx.Payload.ParentResourceID)
-
 			if err != nil {
 				log.Error(ctx, map[string]interface{}{
+					"err":                err,
 					"parent_resource_id": ctx.Payload.ParentResourceID,
 				}, "Parent resource could not be found")
 
 				return err
 			}
 		}
-
 		// Extract the resource owner ID from the request
 		resourceOwnerID, err := uuid.FromString(ctx.Payload.ResourceOwnerID)
 		if err != nil {
 			log.Error(ctx, map[string]interface{}{
+				"err":               err,
 				"resource_owner_id": ctx.Payload.ResourceOwnerID,
 			}, "Resource owner ID is not valid")
 
-			return jsonapi.JSONErrorResponse(ctx, goa.ErrUnauthorized("Invalid resource_owner_id"))
+			return errors.NewConversionError(fmt.Sprintf("resource owner ID is not valida UUID %v", err.Error()))
 		}
 
 		// Lookup the identity record of the resource owner
 		identity, err := appl.Identities().Load(ctx, resourceOwnerID)
 		if err != nil {
-
 			log.Error(ctx, map[string]interface{}{
-				"resource_owner_id": resourceOwnerID.String(),
+				"err":               err,
+				"resource_owner_id": resourceOwnerID,
 			}, "Resource owner could not be found")
 
 			return err
@@ -92,13 +95,11 @@ func (c *ResourceController) Register(ctx *app.RegisterResourceContext) error {
 			ParentResource: parentResource, //ctx.Payload.ParentResourceID,
 			Owner:          *identity,
 			ResourceType:   *resourceType,
-			Description:    *ctx.Payload.Description,
+			Description:    ctx.Payload.Description,
 		}
 
 		// Persist the resource
-		appl.ResourceRepository().Create(ctx, res)
-
-		return err
+		return appl.ResourceRepository().Create(ctx, res)
 	})
 
 	if err != nil {

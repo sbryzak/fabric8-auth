@@ -21,6 +21,7 @@ var _ = a.Resource("resource", func() {
 		a.Response(d.Created, RegisterResourceMedia)
 		a.Response(d.InternalServerError, JSONAPIErrors)
 		a.Response(d.BadRequest, JSONAPIErrors)
+		a.Response(d.NotFound, JSONAPIErrors)
 	})
 
 	a.Action("read", func() {
@@ -77,7 +78,6 @@ var ResourceMedia = a.MediaType("application/vnd.resource+json", func() {
 	a.Attributes(func() {
 		a.Attribute("resource_owner_id", d.String, "Identifier for the owner of the resource")
 		a.Attribute("resource_scopes", a.ArrayOf(d.String), "The valid scopes for this resource")
-		a.Attribute("icon_uri", d.String, "The URI containing the icon for the resource")
 		a.Attribute("name", d.String, "The name of the resource")
 		a.Attribute("description", d.String, "Description of the resource")
 		a.Attribute("type", d.String, "The type of resource")
@@ -87,7 +87,6 @@ var ResourceMedia = a.MediaType("application/vnd.resource+json", func() {
 	})
 	a.View("default", func() {
 		a.Attribute("resource_scopes")
-		a.Attribute("icon_uri")
 		a.Attribute("name")
 		a.Attribute("description")
 		a.Attribute("type")
