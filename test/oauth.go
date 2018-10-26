@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+
 	"github.com/fabric8-services/fabric8-auth/application/factory/wrapper"
 	svc "github.com/fabric8-services/fabric8-auth/application/service"
 	servicecontext "github.com/fabric8-services/fabric8-auth/application/service/context"
@@ -14,10 +15,12 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// ---------------------------------------------------------------------
+// Linking Provider
+// ---------------------------------------------------------------------
 type dummyLinkingProviderFactory interface {
 	setConfig(config *configuration.ConfigurationData)
 	setToken(token string)
-	setLoadProfileFail(value bool)
 }
 
 type dummyLinkingProviderFactoryImpl struct {
@@ -28,7 +31,7 @@ type dummyLinkingProviderFactoryImpl struct {
 
 // ActivateDummyLinkingProviderFactory can be used to create a mock linking provider factory
 func ActivateDummyLinkingProviderFactory(w wrapper.Wrapper, config *configuration.ConfigurationData, token string) {
-	w.WrapFactory(svc.FACTORY_TYPE_LINKING_PROVIDER,
+	w.WrapFactory(svc.LinkingProvider,
 		func(ctx servicecontext.ServiceContext, config *configuration.ConfigurationData) wrapper.FactoryWrapper {
 			baseFactoryWrapper := wrapper.NewBaseFactoryWrapper(ctx, config)
 			return &dummyLinkingProviderFactoryImpl{
@@ -61,44 +64,83 @@ func (f *dummyLinkingProviderFactoryImpl) NewLinkingProvider(ctx context.Context
 	if err != nil {
 		return nil, err
 	}
-	return &DummyProvider{factory: f, linkingProvider: provider}, nil
+	return &DummyLinkingProvider{factory: f, linkingProvider: provider}, nil
 }
 
-type DummyProvider struct {
+type DummyLinkingProvider struct {
 	factory         *dummyLinkingProviderFactoryImpl
 	linkingProvider provider.LinkingProvider
 }
 
-func (p *DummyProvider) Exchange(ctx netcontext.Context, code string) (*oauth2.Token, error) {
+func (p *DummyLinkingProvider) Exchange(ctx netcontext.Context, code string) (*oauth2.Token, error) {
 	return &oauth2.Token{AccessToken: p.factory.Token}, nil
 }
 
-func (p *DummyProvider) AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) string {
+func (p *DummyLinkingProvider) AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) string {
 	return p.linkingProvider.AuthCodeURL(state)
 }
 
-func (p *DummyProvider) ID() uuid.UUID {
+func (p *DummyLinkingProvider) ID() uuid.UUID {
 	return p.linkingProvider.ID()
 }
 
-func (p *DummyProvider) Scopes() string {
+func (p *DummyLinkingProvider) Scopes() string {
 	return p.linkingProvider.Scopes()
 }
 
-func (p *DummyProvider) TypeName() string {
+func (p *DummyLinkingProvider) SetScopes(scopes []string) {
+	p.linkingProvider.SetScopes(scopes)
+}
+
+func (p *DummyLinkingProvider) TypeName() string {
 	return p.linkingProvider.TypeName()
 }
 
-func (p *DummyProvider) URL() string {
+func (p *DummyLinkingProvider) URL() string {
 	return p.linkingProvider.URL()
 }
 
-func (p *DummyProvider) Profile(ctx context.Context, token oauth2.Token) (*provider.UserProfile, error) {
+func (p *DummyLinkingProvider) SetRedirectURL(url string) {
+	p.linkingProvider.SetRedirectURL(url)
+}
+
+func (p *DummyLinkingProvider) Profile(ctx context.Context, token oauth2.Token) (*provider.UserProfile, error) {
 	return &provider.UserProfile{
 		Username: token.AccessToken + "testuser",
 	}, nil
 }
 
-func (provider *DummyProvider) OSOCluster() cluster.Cluster {
-	return *ClusterByURL(provider.URL())
+func (p *DummyLinkingProvider) OSOCluster() cluster.Cluster {
+	return *ClusterByURL(p.URL())
+}
+
+// ---------------------------------------------------------------------
+// Identity Provider
+// ---------------------------------------------------------------------
+
+// ActivateMockIdentityProviderFactory can be used to create an identity provider factory that returns the given mock instance
+func ActivateMockIdentityProviderFactory(w wrapper.Wrapper, p provider.IdentityProvider) {
+	w.WrapFactory(svc.IdentityProvider,
+		func(ctx servicecontext.ServiceContext, config *configuration.ConfigurationData) wrapper.FactoryWrapper {
+			baseFactoryWrapper := wrapper.NewBaseFactoryWrapper(ctx, config)
+
+			return &dummyIdentityProviderFactoryImpl{
+				BaseFactoryWrapper: *baseFactoryWrapper,
+				identityProvider:   p,
+			}
+		},
+		func(w wrapper.FactoryWrapper) {
+		})
+}
+
+type dummyIdentityProviderFactoryImpl struct {
+	wrapper.BaseFactoryWrapper
+	identityProvider provider.IdentityProvider
+}
+
+// make sure that the dummyIdentityProviderFactoryImpl is valid IdentityProviderFactory
+var _ svc.IdentityProviderFactory = &dummyIdentityProviderFactoryImpl{}
+
+func (f *dummyIdentityProviderFactoryImpl) NewIdentityProvider(config provider.IdentityProviderConfiguration) provider.IdentityProvider {
+	return f.identityProvider
 }

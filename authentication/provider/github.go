@@ -26,37 +26,37 @@ type gitHubUser struct {
 }
 
 func NewGitHubIdentityProvider(clientID string, clientSecret string, scopes string, authURL string) *GitHubIdentityProvider {
-	provider := &GitHubIdentityProvider{}
-	provider.ClientID = clientID
-	provider.ClientSecret = clientSecret
-	provider.Endpoint = github.Endpoint
-	provider.RedirectURL = authURL + client.LinkCallbackTokenPath()
-	provider.ScopeStr = scopes
-	provider.Config.Scopes = strings.Split(scopes, " ")
-	provider.ProviderID, _ = uuid.FromString(GitHubProviderID)
-	provider.ProfileURL = "https://api.github.com/user"
-	return provider
+	p := &GitHubIdentityProvider{}
+	p.ClientID = clientID
+	p.ClientSecret = clientSecret
+	p.Endpoint = github.Endpoint
+	p.RedirectURL = authURL + client.LinkCallbackTokenPath()
+	p.ScopeStr = scopes
+	p.Config.Scopes = strings.Split(scopes, " ")
+	p.ProviderID, _ = uuid.FromString(GitHubProviderID)
+	p.ProfileURL = "https://api.github.com/user"
+	return p
 }
 
-func (provider *GitHubIdentityProvider) ID() uuid.UUID {
-	return provider.ProviderID
+func (p *GitHubIdentityProvider) ID() uuid.UUID {
+	return p.ProviderID
 }
 
-func (provider *GitHubIdentityProvider) Scopes() string {
-	return provider.ScopeStr
+func (p *GitHubIdentityProvider) Scopes() string {
+	return p.ScopeStr
 }
 
-func (provider *GitHubIdentityProvider) TypeName() string {
+func (p *GitHubIdentityProvider) TypeName() string {
 	return "github"
 }
 
-func (provider *GitHubIdentityProvider) URL() string {
+func (p *GitHubIdentityProvider) URL() string {
 	return "https://github.com"
 }
 
 // Profile fetches a user profile from the Identity Provider
-func (provider *GitHubIdentityProvider) Profile(ctx context.Context, token oauth2.Token) (*UserProfile, error) {
-	body, err := provider.UserProfilePayload(ctx, token)
+func (p *GitHubIdentityProvider) Profile(ctx context.Context, token oauth2.Token) (*UserProfile, error) {
+	body, err := p.UserProfilePayload(ctx, token)
 	if err != nil {
 		return nil, err
 	}

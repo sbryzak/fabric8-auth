@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"net/url"
+
 	"github.com/fabric8-services/fabric8-auth/app"
 	account "github.com/fabric8-services/fabric8-auth/authentication/account/repository"
 	"github.com/fabric8-services/fabric8-auth/authentication/provider"
@@ -19,11 +21,16 @@ import (
 	"github.com/goadesign/goa"
 	"github.com/satori/go.uuid"
 	"golang.org/x/oauth2"
-	"net/url"
 )
 
+// FactoryType the type of factory
+type FactoryType string
+
 const (
-	FACTORY_TYPE_LINKING_PROVIDER = "factory.type.linking.provider"
+	// LinkingProvider the linking provider factory
+	LinkingProvider FactoryType = "factory.type.linking.provider"
+	// IdentityProvider the identity provider factory
+	IdentityProvider FactoryType = "factory.type.identity.provider"
 )
 
 /*
@@ -183,10 +190,18 @@ type Services interface {
 //
 //----------------------------------------------------------------------------------------------------------------------
 
+// Factories a convenient way to get access to all the factories for the (remote) services
+type Factories interface {
+	LinkingProviderFactory() LinkingProviderFactory
+	IdentityProviderFactory() IdentityProviderFactory
+}
+
+// LinkingProviderFactory the factory to get an `provider.LinkingProvider`
 type LinkingProviderFactory interface {
 	NewLinkingProvider(ctx context.Context, identityID uuid.UUID, req *goa.RequestData, forResource string) (provider.LinkingProvider, error)
 }
 
-type Factories interface {
-	LinkingProviderFactory() LinkingProviderFactory
+// IdentityProviderFactory the factory to get an `provider.IdentityProvider`
+type IdentityProviderFactory interface {
+	NewIdentityProvider(config provider.IdentityProviderConfiguration) provider.IdentityProvider
 }

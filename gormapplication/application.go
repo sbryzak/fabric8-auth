@@ -2,6 +2,7 @@ package gormapplication
 
 import (
 	"fmt"
+
 	"github.com/fabric8-services/fabric8-auth/application/factory/wrapper"
 
 	"strconv"
@@ -243,7 +244,11 @@ func (g *GormDB) LinkingProviderFactory() service.LinkingProviderFactory {
 	return g.factoryManager.LinkingProviderFactory()
 }
 
-func (g *GormDB) WrapFactory(identifier string, constructor wrapper.FactoryWrapperConstructor, initializer wrapper.FactoryWrapperInitializer) {
+func (g *GormDB) IdentityProviderFactory() service.IdentityProviderFactory {
+	return g.factoryManager.IdentityProviderFactory()
+}
+
+func (g *GormDB) WrapFactory(identifier service.FactoryType, constructor wrapper.FactoryWrapperConstructor, initializer wrapper.FactoryWrapperInitializer) {
 	g.factoryManager.WrapFactory(identifier, constructor, initializer)
 }
 

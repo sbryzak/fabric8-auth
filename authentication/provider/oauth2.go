@@ -1,16 +1,17 @@
 package provider
 
 import (
-	"context"
-	"encoding/json"
 	"github.com/fabric8-services/fabric8-auth/errors"
-	"github.com/fabric8-services/fabric8-auth/log"
+	"io/ioutil"
 	"github.com/fabric8-services/fabric8-auth/rest"
+	"github.com/fabric8-services/fabric8-auth/log"
+	"net/http"
+	"encoding/json"
+	"context"
+
 	"github.com/satori/go.uuid"
 	netcontext "golang.org/x/net/context"
 	"golang.org/x/oauth2"
-	"io/ioutil"
-	"net/http"
 )
 
 // #####################################################################################################################
@@ -72,6 +73,8 @@ type IdentityProvider interface {
 	AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) string
 	Exchange(ctx netcontext.Context, code string) (*oauth2.Token, error)
 	Profile(ctx context.Context, token oauth2.Token) (*UserProfile, error)
+	SetRedirectURL(string)
+	SetScopes([]string)
 }
 
 // LinkingProviderConfig is a shared configuration for all OAuth2 providers that provide account linking
@@ -97,18 +100,7 @@ type LinkingProvider interface {
 //
 // #####################################################################################################################
 
-// NewIdentityProvider creates a new default OAuth identity provider
-func NewIdentityProvider(config IdentityProviderConfiguration) *DefaultIdentityProvider {
-	provider := &DefaultIdentityProvider{}
-	provider.ProfileURL = config.GetOAuthProviderEndpointUserInfo()
-	provider.ClientID = config.GetOAuthProviderClientID()
-	provider.ClientSecret = config.GetOAuthProviderClientSecret()
-	provider.Scopes = []string{"user:email"}
-	provider.Endpoint = oauth2.Endpoint{AuthURL: config.GetOAuthProviderEndpointAuth(), TokenURL: config.GetOAuthProviderEndpointToken()}
-	return provider
-}
-
-// BaseIdentityProvider is the base implementation of the IdentityProvider interface
+// DefaultIdentityProvider is the default implementation of the IdentityProvider interface
 type DefaultIdentityProvider struct {
 	oauth2.Config
 	ProviderID uuid.UUID
@@ -117,8 +109,8 @@ type DefaultIdentityProvider struct {
 }
 
 // Profile fetches a user profile from the Identity Provider
-func (provider *DefaultIdentityProvider) Profile(ctx context.Context, token oauth2.Token) (*UserProfile, error) {
-	body, err := provider.UserProfilePayload(ctx, token)
+func (p *DefaultIdentityProvider) Profile(ctx context.Context, token oauth2.Token) (*UserProfile, error) {
+	body, err := p.UserProfilePayload(ctx, token)
 	if err != nil {
 		return nil, err
 	}
@@ -144,12 +136,12 @@ func (provider *DefaultIdentityProvider) Profile(ctx context.Context, token oaut
 
 // UserProfilePayload fetches user profile payload from Identity Provider.  It is used by the Profile function to do
 // the actual work of talking to the identity provider
-func (provider *DefaultIdentityProvider) UserProfilePayload(ctx context.Context, token oauth2.Token) ([]byte, error) {
-	req, err := http.NewRequest("GET", provider.ProfileURL, nil)
+func (p *DefaultIdentityProvider) UserProfilePayload(ctx context.Context, token oauth2.Token) ([]byte, error) {
+	req, err := http.NewRequest("GET", p.ProfileURL, nil)
 	if err != nil {
 		log.Error(ctx, map[string]interface{}{
 			"err":         err.Error(),
-			"profile_url": provider.ProfileURL,
+			"profile_url": p.ProfileURL,
 		}, "unable to create http request")
 		return nil, err
 	}
@@ -158,7 +150,7 @@ func (provider *DefaultIdentityProvider) UserProfilePayload(ctx context.Context,
 	if err != nil {
 		log.Error(ctx, map[string]interface{}{
 			"err":         err.Error(),
-			"profile_url": provider.ProfileURL,
+			"profile_url": p.ProfileURL,
 		}, "unable to get user profile")
 		return nil, err
 	}
@@ -167,7 +159,7 @@ func (provider *DefaultIdentityProvider) UserProfilePayload(ctx context.Context,
 	if err != nil {
 		log.Error(ctx, map[string]interface{}{
 			"err":         err.Error(),
-			"profile_url": provider.ProfileURL,
+			"profile_url": p.ProfileURL,
 		}, "unable to read user profile payload")
 		return body, err
 	}
@@ -175,9 +167,19 @@ func (provider *DefaultIdentityProvider) UserProfilePayload(ctx context.Context,
 		log.Error(ctx, map[string]interface{}{
 			"status":        res.Status,
 			"response_body": string(body),
-			"profile_url":   provider.ProfileURL,
+			"profile_url":   p.ProfileURL,
 		}, "unable to get user profile")
 		return nil, errors.NewInternalErrorFromString(ctx, "unable to get user profile")
 	}
 	return body, nil
+}
+
+// SetRedirectURL overrides the redirect url in the underlying config
+func (p *DefaultIdentityProvider) SetRedirectURL(url string) {
+	p.Config.RedirectURL = url
+}
+
+// SetScopes overrides the scopes in the underlying config
+func (p *DefaultIdentityProvider) SetScopes(scopes []string) {
+	p.Config.Scopes = scopes
 }

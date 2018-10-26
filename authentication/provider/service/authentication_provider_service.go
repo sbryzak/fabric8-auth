@@ -7,6 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
+	"regexp"
+	"strconv"
+	"time"
+
 	"github.com/fabric8-services/fabric8-auth/app"
 	"github.com/fabric8-services/fabric8-auth/application/service"
 	"github.com/fabric8-services/fabric8-auth/application/service/base"
@@ -22,10 +27,6 @@ import (
 	errs "github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 	"golang.org/x/oauth2"
-	"net/url"
-	"regexp"
-	"strconv"
-	"time"
 )
 
 type AuthenticationProviderServiceConfig interface {
@@ -55,7 +56,7 @@ func NewAuthenticationProviderService(context servicecontext.ServiceContext, con
 		}, "failed to create token manager")
 	}
 
-	provider := provider.NewIdentityProvider(config)
+	provider := context.Factories().IdentityProviderFactory().NewIdentityProvider(config)
 
 	return &authenticationProviderServiceImpl{
 		BaseService:        base.NewBaseService(context),
@@ -107,14 +108,15 @@ func (s *authenticationProviderServiceImpl) GenerateAuthCodeURL(ctx context.Cont
 	}
 
 	// Create a new identity provider / configuration
-	provider := provider.NewIdentityProvider(s.config)
+	//provider := provider.NewIdentityProvider(s.config)
+	provider := s.ServiceContext.Factories().IdentityProviderFactory().NewIdentityProvider(s.config)
 
 	// Override the redirect URL, setting it to the callback URL that was passed in
-	provider.RedirectURL = callbackURL
+	provider.SetRedirectURL(callbackURL)
 
 	// Override the scopes if a value is passed in
 	if scopes != nil {
-		provider.Scopes = scopes
+		provider.SetScopes(scopes)
 	}
 
 	// Generate the Authorization Code URL

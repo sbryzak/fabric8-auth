@@ -40,50 +40,51 @@ type metadata struct {
 	Name string `json:"name"`
 }
 
+// NewOpenShiftIdentityProvider initializes a new OpenShiftIdentityProvider
 func NewOpenShiftIdentityProvider(cluster cluster.Cluster, authURL string) (*OpenShiftIdentityProvider, error) {
-	provider := &OpenShiftIdentityProvider{}
-	provider.Cluster = cluster
-	provider.ClientID = cluster.AuthClientID
-	provider.ClientSecret = cluster.AuthClientSecret
-	provider.Endpoint = oauth2.Endpoint{
+	p := &OpenShiftIdentityProvider{}
+	p.Cluster = cluster
+	p.ClientID = cluster.AuthClientID
+	p.ClientSecret = cluster.AuthClientSecret
+	p.Endpoint = oauth2.Endpoint{
 		AuthURL:  fmt.Sprintf("%soauth/authorize", rest.AddTrailingSlashToURL(cluster.APIURL)),
 		TokenURL: fmt.Sprintf("%soauth/token", rest.AddTrailingSlashToURL(cluster.APIURL)),
 	}
-	provider.RedirectURL = authURL + client.LinkCallbackTokenPath()
-	provider.ScopeStr = cluster.AuthClientDefaultScope
-	provider.Config.Scopes = strings.Split(cluster.AuthClientDefaultScope, " ")
+	p.RedirectURL = authURL + client.LinkCallbackTokenPath()
+	p.ScopeStr = cluster.AuthClientDefaultScope
+	p.Config.Scopes = strings.Split(cluster.AuthClientDefaultScope, " ")
 	prID, err := uuid.FromString(cluster.TokenProviderID)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to convert cluster TokenProviderID to UUID")
 	}
-	provider.ProviderID = prID
-	provider.ProfileURL = fmt.Sprintf("%soapi/v1/users/~", rest.AddTrailingSlashToURL(cluster.APIURL))
-	return provider, nil
+	p.ProviderID = prID
+	p.ProfileURL = fmt.Sprintf("%soapi/v1/users/~", rest.AddTrailingSlashToURL(cluster.APIURL))
+	return p, nil
 }
 
-func (provider *OpenShiftIdentityProvider) ID() uuid.UUID {
-	return provider.ProviderID
+func (p *OpenShiftIdentityProvider) ID() uuid.UUID {
+	return p.ProviderID
 }
 
-func (provider *OpenShiftIdentityProvider) Scopes() string {
-	return provider.ScopeStr
+func (p *OpenShiftIdentityProvider) Scopes() string {
+	return p.ScopeStr
 }
 
-func (provider *OpenShiftIdentityProvider) TypeName() string {
+func (p *OpenShiftIdentityProvider) TypeName() string {
 	return "openshift-v3"
 }
 
-func (provider *OpenShiftIdentityProvider) OSOCluster() cluster.Cluster {
-	return provider.Cluster
+func (p *OpenShiftIdentityProvider) OSOCluster() cluster.Cluster {
+	return p.Cluster
 }
 
-func (provider *OpenShiftIdentityProvider) URL() string {
-	return provider.Cluster.APIURL
+func (p *OpenShiftIdentityProvider) URL() string {
+	return p.Cluster.APIURL
 }
 
 // Profile fetches a user profile from the Identity Provider
-func (provider *OpenShiftIdentityProvider) Profile(ctx context.Context, token oauth2.Token) (*UserProfile, error) {
-	body, err := provider.UserProfilePayload(ctx, token)
+func (p *OpenShiftIdentityProvider) Profile(ctx context.Context, token oauth2.Token) (*UserProfile, error) {
+	body, err := p.UserProfilePayload(ctx, token)
 	if err != nil {
 		return nil, err
 	}

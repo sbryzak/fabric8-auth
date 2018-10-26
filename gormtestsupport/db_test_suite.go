@@ -5,6 +5,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/fabric8-services/fabric8-auth/application/service"
+
 	"github.com/fabric8-services/fabric8-auth/application"
 	"github.com/fabric8-services/fabric8-auth/application/factory/wrapper"
 	config "github.com/fabric8-services/fabric8-auth/configuration"
@@ -127,9 +129,9 @@ func (s *DBTestSuite) NewTestGraph(t *testing.T) graph.TestGraph {
 	return graph.NewTestGraph(t, s.Application, s.Ctx, s.DB)
 }
 
-// ReplaceFactory replaces a default factory with the specified factory.  This function is recommended to be used
+// WrapFactory replaces a default factory with the specified factory.  This function is recommended to be used
 // during tests where the default behaviour of a factory needs to be overridden
-func (s *DBTestSuite) WrapFactory(identifier string, constructor wrapper.FactoryWrapperConstructor, initializer wrapper.FactoryWrapperInitializer) {
+func (s *DBTestSuite) WrapFactory(identifier service.FactoryType, constructor wrapper.FactoryWrapperConstructor, initializer wrapper.FactoryWrapperInitializer) {
 	s.Application.(*gormapplication.GormDB).WrapFactory(identifier, constructor, initializer)
 }
 

@@ -3,6 +3,11 @@ package provider_test
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"testing"
+
 	"github.com/fabric8-services/fabric8-auth/authentication/provider"
 	"github.com/fabric8-services/fabric8-auth/configuration"
 	autherror "github.com/fabric8-services/fabric8-auth/errors"
@@ -14,10 +19,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/oauth2"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"testing"
 )
 
 func TestLoginIDP(t *testing.T) {

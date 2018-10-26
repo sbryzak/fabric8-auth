@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/fabric8-services/fabric8-auth/app"
 	"github.com/fabric8-services/fabric8-auth/application/service"
@@ -555,7 +556,7 @@ func (s *tokenServiceImpl) Refresh(ctx context.Context, identity *accountrepo.Id
 }
 
 // RetrieveToken
-func (c *tokenServiceImpl) RetrieveToken(ctx context.Context, forResource string, req *goa.RequestData, forcePull *bool) (*app.ExternalToken, *string, error) {
+func (s *tokenServiceImpl) RetrieveToken(ctx context.Context, forResource string, req *goa.RequestData, forcePull *bool) (*app.ExternalToken, *string, error) {
 	if forResource == "" {
 		return nil, nil, errors.NewBadParameterError("for", "").Expected("git or OpenShift resource URL")
 	}
@@ -571,7 +572,7 @@ func (c *tokenServiceImpl) RetrieveToken(ctx context.Context, forResource string
 		currentIdentityID = *id
 	} else {
 		// Extract user ID
-		currentIdentity, err := c.Services().UserService().LoadContextIdentityIfNotDeprovisioned(ctx)
+		currentIdentity, err := s.Services().UserService().LoadContextIdentityIfNotDeprovisioned(ctx)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -580,7 +581,7 @@ func (c *tokenServiceImpl) RetrieveToken(ctx context.Context, forResource string
 
 	var appResponse app.ExternalToken
 
-	linkingProvider, err := c.Factories().LinkingProviderFactory().NewLinkingProvider(ctx, currentIdentityID, req, forResource)
+	linkingProvider, err := s.Factories().LinkingProviderFactory().NewLinkingProvider(ctx, currentIdentityID, req, forResource)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -588,15 +589,15 @@ func (c *tokenServiceImpl) RetrieveToken(ctx context.Context, forResource string
 	osConfig, ok := linkingProvider.(*provider.OpenShiftIdentityProvider)
 	if ok && serviceAccount {
 		// This is a request from OSO proxy, tenant, Jenkins Idler, or Jenkins proxy service to obtain a cluster wide token
-		return c.retrieveClusterToken(ctx, forResource, forcePull, *osConfig)
+		return s.retrieveClusterToken(ctx, forResource, forcePull, *osConfig)
 	}
 
-	externalToken, err := c.loadToken(ctx, linkingProvider, currentIdentityID)
+	externalToken, err := s.loadToken(ctx, linkingProvider, currentIdentityID)
 	if err != nil {
 		return nil, nil, err
 	}
 	if externalToken != nil {
-		updatedToken, errorResponse, err := c.updateProfileIfEmpty(ctx, forResource, req, linkingProvider, externalToken, forcePull)
+		updatedToken, errorResponse, err := s.updateProfileIfEmpty(ctx, forResource, req, linkingProvider, externalToken, forcePull)
 		if err != nil {
 			return nil, errorResponse, err
 		}
@@ -620,7 +621,7 @@ func (c *tokenServiceImpl) RetrieveToken(ctx context.Context, forResource string
 
 // updateProfileIfEmpty checks if the username is missing in the token record (may happen to old accounts)
 // loads the user profile from the identity provider and saves the username in the external token
-func (c *tokenServiceImpl) updateProfileIfEmpty(ctx context.Context, forResource string, req *goa.RequestData,
+func (s *tokenServiceImpl) updateProfileIfEmpty(ctx context.Context, forResource string, req *goa.RequestData,
 	prov provider.LinkingProvider, token *tokenrepo.ExternalToken, forcePull *bool) (tokenrepo.ExternalToken, *string, error) {
 	externalToken := *token
 	if forcePull != nil && *forcePull {
@@ -637,8 +638,8 @@ func (c *tokenServiceImpl) updateProfileIfEmpty(ctx context.Context, forResource
 			return externalToken, &errorResponse, errors.NewUnauthorizedError(err.Error())
 		}
 		externalToken.Username = userProfile.Username
-		err = c.ExecuteInTransaction(func() error {
-			return c.Repositories().ExternalTokens().Save(ctx, &externalToken)
+		err = s.ExecuteInTransaction(func() error {
+			return s.Repositories().ExternalTokens().Save(ctx, &externalToken)
 		})
 		return externalToken, nil, err
 	}
@@ -680,14 +681,14 @@ func (c *tokenServiceImpl) retrieveClusterToken(ctx context.Context, forResource
 	return &clusterToken, nil, nil
 }
 
-func (c *tokenServiceImpl) loadToken(ctx context.Context, prov provider.LinkingProvider, currentIdentity uuid.UUID) (*tokenrepo.ExternalToken, error) {
+func (s *tokenServiceImpl) loadToken(ctx context.Context, prov provider.LinkingProvider, currentIdentity uuid.UUID) (*tokenrepo.ExternalToken, error) {
 	var externalToken *tokenrepo.ExternalToken
-	err := c.ExecuteInTransaction(func() error {
-		err := c.Repositories().Identities().CheckExists(ctx, currentIdentity.String())
+	err := s.ExecuteInTransaction(func() error {
+		err := s.Repositories().Identities().CheckExists(ctx, currentIdentity.String())
 		if err != nil {
 			return errors.NewUnauthorizedError(err.Error())
 		}
-		tokens, err := c.Repositories().ExternalTokens().LoadByProviderIDAndIdentityID(ctx, prov.ID(), currentIdentity)
+		tokens, err := s.Repositories().ExternalTokens().LoadByProviderIDAndIdentityID(ctx, prov.ID(), currentIdentity)
 		if err != nil {
 			return err
 		}

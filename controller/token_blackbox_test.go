@@ -24,6 +24,7 @@ import (
 	"github.com/fabric8-services/fabric8-auth/errors"
 	"github.com/fabric8-services/fabric8-auth/gormtestsupport"
 	testsupport "github.com/fabric8-services/fabric8-auth/test"
+	testprovider "github.com/fabric8-services/fabric8-auth/test/generated/authentication/provider"
 	testservice "github.com/fabric8-services/fabric8-auth/test/service"
 	testtoken "github.com/fabric8-services/fabric8-auth/test/token"
 
@@ -107,6 +108,9 @@ func (s *TokenControllerTestSuite) checkLoginRequiredHeader(rw http.ResponseWrit
 }
 
 func (s *TokenControllerTestSuite) TestRefreshToken() {
+
+	p := testprovider.NewIdentityProviderMock(s.T())
+	testsupport.ActivateMockIdentityProviderFactory(s, p)
 
 	s.T().Run("using correct refresh token", func(t *testing.T) {
 

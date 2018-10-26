@@ -1,12 +1,13 @@
 package wrapper
 
 import (
+	"github.com/fabric8-services/fabric8-auth/application/service"
 	"github.com/fabric8-services/fabric8-auth/application/service/context"
 	"github.com/fabric8-services/fabric8-auth/configuration"
 )
 
 type Wrapper interface {
-	WrapFactory(identifier string, constructor FactoryWrapperConstructor, initializer FactoryWrapperInitializer)
+	WrapFactory(t service.FactoryType, constructor FactoryWrapperConstructor, initializer FactoryWrapperInitializer)
 }
 
 type FactoryWrapperConstructor = func(context.ServiceContext, *configuration.ConfigurationData) FactoryWrapper

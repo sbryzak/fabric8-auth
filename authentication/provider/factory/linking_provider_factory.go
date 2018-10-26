@@ -1,9 +1,11 @@
-package service
+package factory
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+
 	"github.com/fabric8-services/fabric8-auth/application/service"
 	"github.com/fabric8-services/fabric8-auth/application/service/base"
 	servicecontext "github.com/fabric8-services/fabric8-auth/application/service/context"
@@ -14,10 +16,9 @@ import (
 	"github.com/fabric8-services/fabric8-auth/rest"
 	"github.com/goadesign/goa"
 	"github.com/satori/go.uuid"
-	"net/url"
 )
 
-// NewOauthProviderFactory returns the default Oauth provider factory.
+// NewLinkingProviderFactory returns the default linking provider factory.
 func NewLinkingProviderFactory(context servicecontext.ServiceContext, config provider.LinkingProviderConfig) service.LinkingProviderFactory {
 	factory := &linkingProviderFactoryImpl{
 		BaseService: base.NewBaseService(context),
